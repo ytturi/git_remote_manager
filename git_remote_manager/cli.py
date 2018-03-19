@@ -8,9 +8,12 @@ from urlparse import urlparse
 import click
 
 
+from git_remote_manager import fabfile
+
+
 PACKAGE_PREFIX = 'GIT_MANAGER'
 DEFAULT_USER = getuser()
-DEFAULT_SRC_PATH = join('home', DEFAULT_USER, 'src')
+DEFAULT_SRC_PATH = join('/home', DEFAULT_USER, 'src')
 
 
 def manager_confs(kwargs):
@@ -65,12 +68,12 @@ def check_repositories(**kwargs):
         ''
     ).strip()
 
-    env.src = (
+    src_path = (
         confs['src'] or DEFAULT_SRC_PATH
     ).strip()
 
-    # check_repositories_task = WrappedCallableTask(fabfile.check_repos)
-    # execute(check_repositories_task, host=url.hostname)
+    check_repositories_task = WrappedCallableTask(fabfile.check_repos)
+    execute(check_repositories_task, src=src_path, host=url.hostname)
 
 
 if __name__ == '__main__':
