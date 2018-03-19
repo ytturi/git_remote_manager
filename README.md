@@ -7,7 +7,7 @@ Using [Fabric Tools](http://www.fabfile.org) for remote management and
 
 Using existing packages, and creating new ones, this repo is intended to:
 
-- [ ] Check existing repositories in a path
+- [x] Check existing repositories in a path
 - [ ] Clone new repositories
 - [ ] Get Status info
 - [ ] Clean repository (checkout)
@@ -26,4 +26,6 @@ And many more (yet to discover!)
 
 > Not yet (..)
 
-- 
+- Check existing repositories in a path
+
+python git_remote_manager/cli.py --host ssh://user@hostname
