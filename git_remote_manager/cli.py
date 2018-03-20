@@ -5,8 +5,9 @@ from getpass import getuser, getpass
 from osconf import config_from_environment
 from os.path import join
 from urlparse import urlparse
-import click
 
+import logging
+import click
 
 from git_remote_manager import fabfile
 
@@ -14,6 +15,19 @@ from git_remote_manager import fabfile
 PACKAGE_PREFIX = 'GIT_MANAGER'
 DEFAULT_USER = getuser()
 DEFAULT_SRC_PATH = join('/home', DEFAULT_USER, 'src')
+
+
+def configure_logging(verbose=False, debug=False):
+    level = logging.WARNING
+    if debug:
+        level = logging.DEBUG
+    elif verbose:
+        level = logging.INFO
+    logging.basicConfig(
+        format='%(message)s',
+        level=level
+    )
+    return logging.getLogger(PACKAGE_PREFIX)
 
 
 def manager_confs(defaults, required=False):
@@ -28,6 +42,7 @@ def manager_confs(defaults, required=False):
                         False if missing required values
     :rtype:          dict
     """
+    logger = logging.getLogger(PACKAGE_PREFIX)
     if not required:
         required = []
     try:
@@ -36,7 +51,7 @@ def manager_confs(defaults, required=False):
             **defaults
         )
     except Exception as err:
-        print(err.message)
+        logger.critical(err.message)
         return False
 
 
@@ -62,7 +77,11 @@ def manager_confs(defaults, required=False):
         value=DEFAULT_USER,
     )
 )
+@click.option('-v', '--verbose', help='Verbose level as INFO')
+@click.option('-d', '--debug', help='Verbose level as DEBUG')
 def check_repositories(**kwargs):
+    logger = configure_logging(verbose=kwargs.get('verbose', False),
+                               debug=kwargs.get('debug', False))
     confs = manager_confs(kwargs, required=['host'])
     if confs is False:
         exit(-1)
