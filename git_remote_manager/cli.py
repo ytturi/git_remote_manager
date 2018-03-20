@@ -16,17 +16,28 @@ DEFAULT_USER = getuser()
 DEFAULT_SRC_PATH = join('/home', DEFAULT_USER, 'src')
 
 
-def manager_confs(kwargs):
+def manager_confs(defaults, required=False):
+    """
+    Check for MANAGER confs in environment.
+    Default values and required keys can be provided
+    :param defaults: Default Values if not found on environment
+    :type defaults:  dict
+    :param required: Required Keys to be set either by environment or defaults
+    :type required:  list
+    :return:         Dictionary with all values from environment or
+                        False if missing required values
+    :rtype:          dict
+    """
+    if not required:
+        required = []
     try:
         return config_from_environment(
-            PACKAGE_PREFIX, [
-                'host'
-            ],
-            **kwargs
+            PACKAGE_PREFIX, required,
+            **defaults
         )
     except Exception as err:
         print(err.message)
-        exit(-1)
+        return False
 
 
 @click.command(name='get_repos')
@@ -52,7 +63,12 @@ def manager_confs(kwargs):
     )
 )
 def check_repositories(**kwargs):
-    confs = manager_confs(kwargs)
+    confs = manager_confs(kwargs, required=['host'])
+    if confs is False:
+        exit(-1)
+    for key, value in kwargs:
+        if key in confs.keys() and confs[key] != value:
+            confs.update({key: value})
     url = urlparse(confs['host'])
 
     env.user = (
