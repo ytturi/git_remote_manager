@@ -1,20 +1,16 @@
 # coding=utf-8
 from fabric.tasks import execute, WrappedCallableTask
 from fabric.api import env
-from getpass import getuser, getpass
+from getpass import getpass
 from osconf import config_from_environment
-from os.path import join
 from urlparse import urlparse
 
 import logging
 import click
 
 from git_remote_manager import fabfile
-
-
-PACKAGE_PREFIX = 'GIT_MANAGER'
-DEFAULT_USER = getuser()
-DEFAULT_SRC_PATH = join('/home', DEFAULT_USER, 'src')
+from git_remote_manager.settings import PACKAGE_PREFIX, DEFAULT_USER
+from git_remote_manager.settings import DEFAULT_SRC_PATH
 
 
 def configure_logging(verbose=False, debug=False):
@@ -57,44 +53,39 @@ def manager_confs(defaults, required=False):
 
 @click.command(name='get_repos')
 @click.option(
-    '-h', '--host', type=str, default='',
+    '-h', '--host', type=str, default=False,
     help='Host to connect at ({env_var})[{value}]'.format(
         env_var='{}_HOST'.format(PACKAGE_PREFIX),
-        value='ssh://{}@hostname'.format(DEFAULT_USER),
-    )
-)
+        value='ssh://{}@hostname'.format(DEFAULT_USER)))
 @click.option(
-    '-u', '--user', type=str, default='',
+    '-u', '--user', type=str, default=False,
     help='User for remote connection ({env_var})[{value}]'.format(
         env_var='{}_USER'.format(PACKAGE_PREFIX),
-        value=DEFAULT_USER,
-    )
-)
+        value=DEFAULT_USER))
 @click.option(
-    '-s', '--src', type=str, default='',
+    '-s', '--src', type=str, default=False,
     help='User for remote connection ({env_var})[{value}]'.format(
         env_var='{}_USER'.format(PACKAGE_PREFIX),
-        value=DEFAULT_USER,
-    )
-)
+        value=DEFAULT_USER))
 @click.option(
-    '-r', '--repository', type=str, default='',
-    help='Repository to check for (empty to list all repositories)'
-)
+    '-r', '--repository', type=str, default=False,
+    help='Repository to check for (empty to list all repositories)')
 @click.option(
-    '-b', '--branch', type=str, default='',
-    help='Branch to check the repository is in(requires "-r" )'
-)
-@click.option('-v', '--verbose', help='Verbose level as INFO')
-@click.option('-d', '--debug', help='Verbose level as DEBUG')
+    '-b', '--branch', type=str, default=False,
+    help='Branch to check the repository is in(requires "-r" )')
+@click.option('-v', '--verbose', is_flag=True, default=False,
+              help='Verbose level as INFO')
+@click.option('-d', '--debug', is_flag=True, default=False,
+              help='Verbose level as DEBUG')
 def check_repositories(**kwargs):
     logger = configure_logging(verbose=kwargs.get('verbose', False),
                                debug=kwargs.get('debug', False))
     confs = manager_confs(kwargs, required=['host'])
     if confs is False:
         exit(-1)
-    for key, value in kwargs:
-        if key in confs.keys() and confs[key] != value:
+    for key, value in kwargs.items():
+        if key in confs.keys() and kwargs[key] is not False \
+                and confs[key] != value:
             confs.update({key: value})
     url = urlparse(confs['host'])
 
@@ -111,9 +102,7 @@ def check_repositories(**kwargs):
         ''
     ).strip()
 
-    src_path = (
-        confs['src'] or DEFAULT_SRC_PATH
-    ).strip()
+    src_path = (confs['src'] or DEFAULT_SRC_PATH).strip()
 
     check_repositories_task = WrappedCallableTask(fabfile.check_repos)
     execute(

@@ -1,13 +1,13 @@
 # coding=utf-8
-from fabric.api import run, cd, task
+from fabric.api import run, cd, task, settings, hide
 from fabric.state import output
 from fabric import colors
 from os.path import join
 from tqdm import tqdm
 
-
-from git_remote_manager.cli import PACKAGE_PREFIX
 import logging
+
+from git_remote_manager.settings import PACKAGE_PREFIX
 
 logger = logging.getLogger(PACKAGE_PREFIX.lower())
 
@@ -16,35 +16,42 @@ for k in output.keys():
 
 
 def is_git_repository(path):
-    with cd(path):
-        files = run('ls -a')
-        return '.git' in files
+    with settings(hide('everything')):
+        with cd(path):
+            files = run('ls -a')
+            return '.git' in files
 
 
 def is_repo_in_branch(src, repository, branch):
-    with cd(join(src, repository)):
-        res = run('git branch | grep \* | cut -d ' ' -f2-')
-        return branch if branch in res else False
+    with settings(hide('everything')):
+        with cd(join(src, repository)):
+            res = run('git branch | grep \* | cut -d ' ' -f2-')
+            return branch if branch in res else False
 
 
-def list_repos(src):
+def list_repos(src, repository=False):
     """
     List all repositories in src path
     :param src:         Source Path to list repositories
     :type src:          str
+    :param repository:  Find repositories until repository is found
+    :type repository:   str
     :return:            A list of found reports
     :rtype:             list
     """
     repos = []
-    with cd(src):
-        dirs = run('ls -da *').split()
-        for dir_name in tqdm(dirs, desc='Checking {}'.format(src)):
-            if is_git_repository(dir_name):
-                if logger.level <= logging.INFO:
-                    tqdm.write('\t'+colors.green(dir_name))
-                repos.append(dir_name)
+    with settings(hide('everything')):
+        with cd(src):
+            dirs = run('ls -da *').split()
+            for dir_name in tqdm(dirs, desc='Checking {}'.format(src)):
+                if is_git_repository(dir_name):
+                    if logger.level <= logging.INFO:
+                        tqdm.write('\t'+colors.green(dir_name))
+                    repos.append(dir_name)
+                    if repository and repository in dir_name:
+                        return repos
     if not repos:
-        logger.info(colors.red('No repositories found!'))
+        logger.warning(colors.red('No repositories found!'))
     return repos
 
 
@@ -67,18 +74,20 @@ def check_repos(src, repository=False, branch=False):
                         Else: False
     :rtype:             bool
     """
-    repos = list_repos(src=src)
+    if branch and not repository:
+        logger.critical(
+            colors.red('Repository is required to check for a branch!'))
+        return False
+    repos = list_repos(src=src, repository=repository)
     if not repos:
         return False
     if repository and repository not in repos:
-        logger.info(colors.red('Repository {} not found'.format(repository)))
+        logger.warning(colors.red('Repository {} not found'.format(repository)))
         return False
     elif repository:
-        logger.info(colors.green('Repositort {} found in {}'.format(
+        logger.warning(colors.green('Repository {} found in {}'.format(
             repository, src
         )))
-    if branch and not repository:
-        logger.error('Repository is required to check for a branch!')
     if branch:
         return is_repo_in_branch(src, repository, branch)
     return any(repos)
