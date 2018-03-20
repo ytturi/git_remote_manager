@@ -1,3 +1,6 @@
+
+[![Build Status](https://travis-ci.org/ytturi/git_remote_manager.svg?branch=master)](https://travis-ci.org/ytturi/git_remote_manager)
+
 ## Description
 
 A python-based remote repository manager package.
