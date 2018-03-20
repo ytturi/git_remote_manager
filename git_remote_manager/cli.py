@@ -77,6 +77,14 @@ def manager_confs(defaults, required=False):
         value=DEFAULT_USER,
     )
 )
+@click.option(
+    '-r', '--repository', type=str, default='',
+    help='Repository to check for (empty to list all repositories)'
+)
+@click.option(
+    '-b', '--branch', type=str, default='',
+    help='Branch to check the repository is in(requires "-r" )'
+)
 @click.option('-v', '--verbose', help='Verbose level as INFO')
 @click.option('-d', '--debug', help='Verbose level as DEBUG')
 def check_repositories(**kwargs):
@@ -108,7 +116,11 @@ def check_repositories(**kwargs):
     ).strip()
 
     check_repositories_task = WrappedCallableTask(fabfile.check_repos)
-    execute(check_repositories_task, src=src_path, host=url.hostname)
+    execute(
+        check_repositories_task, src=src_path, host=url.hostname,
+        repository=kwargs.get('repository', False),
+        branch=kwargs.get('branch', False),
+    )
 
 
 if __name__ == '__main__':
